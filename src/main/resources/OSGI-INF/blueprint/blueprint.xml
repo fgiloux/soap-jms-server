@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cxf="http://camel.apache.org/schema/blueprint/cxf"
+           xmlns:amq="http://activemq.apache.org/schema/core"
+           xsi:schemaLocation="
+             http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+             http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd
+             http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd
+             http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+
+<bean id="output" class="org.apache.camel.example.reportincident.ReportFactory" />
+
+  <!--   No optimisation done: no cache, no connection pool  -->
+  <!-- the bean with name ConnectionFactory is used per default  -->
+  <bean id="ConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+    <property name="brokerURL" value="tcp://localhost:61616"/>
+    <property name="userName" value="admin"/>
+    <property name="password" value="admin"/>
+  </bean>
+  
+  <cxf:cxfEndpoint id="reportEndpoint"
+                   address="jms:queue:TEST.REPORT.REQ?exchangePattern=InOut&amp;messageType=text"
+                   serviceClass="org.apache.camel.example.reportincident.ReportIncidentEndpoint"
+                   wsdlURL="wsdl/report_incident.wsdl">
+ </cxf:cxfEndpoint>
+
+  <camelContext xmlns="http://camel.apache.org/schema/blueprint" xmlns:tns="http://reportincident.example.camel.apache.org" trace="true">
+  <route id="reportIncident" trace="true">
+    <from uri="cxf:bean:reportEndpoint"/>
+    <log message="The body of the request is: ${body}" loggingLevel="INFO"/>
+    <bean ref="output" method="createOutputReportIncident"/>
+  </route> 
+  </camelContext>
+
+</blueprint>
